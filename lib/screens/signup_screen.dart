@@ -1,18 +1,72 @@
 import 'package:flutter/material.dart';
+import 'homepage_screen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class Register extends StatefulWidget {
   const Register({super.key});
 
   @override
-  _RegisterScreen createState() => _RegisterScreen();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreen extends State<Register> {
+class _RegisterScreenState extends State<Register> {
   final _formKey = GlobalKey<FormState>();
+  TextEditingController email = TextEditingController();
+  TextEditingController pass = TextEditingController();
+  TextEditingController phoneNumber = TextEditingController();
+  TextEditingController studentId = TextEditingController();
+
+  Future<void> register() async {
+    var url = Uri.http("10.10.11.168", '/flutter/register.php');
+    var response = await http.post(url, body: {
+      "email": email.text,
+      "password": pass.text,
+      "phoneNumber": phoneNumber.text,
+      "studentId": studentId.text,
+    });
+
+    if (response.statusCode == 200) {
+      var data = json.decode(response.body);
+      print('Response Data: $data');
+
+      if (data['status'] == 'success') {
+        String userID = data['userID'].toString(); // แปลง userID เป็น String
+        print('User ID: $userID');
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userID: userID),
+          ),
+        );
+      } else {
+        Fluttertoast.showToast(
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          msg: data['message'],
+          toastLength: Toast.LENGTH_SHORT,
+        );
+      }
+    } else {
+      Fluttertoast.showToast(
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        msg: 'Server Error: ${response.statusCode}',
+        toastLength: Toast.LENGTH_SHORT,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.red,
+        title: const Text('SA.CLUBS | SIGNUP'),
+        automaticallyImplyLeading: false, // ซ่อนปุ่ม Back
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -20,16 +74,8 @@ class _RegisterScreen extends State<Register> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'SA.CLUBS | SIGNUP',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
               TextFormField(
+                controller: email,
                 decoration: InputDecoration(
                   hintText: 'Email',
                   prefixIcon: const Icon(Icons.email),
@@ -50,6 +96,7 @@ class _RegisterScreen extends State<Register> {
               const SizedBox(height: 16),
               TextFormField(
                 obscureText: true,
+                controller: pass,
                 decoration: InputDecoration(
                   hintText: 'Password',
                   prefixIcon: const Icon(Icons.lock),
@@ -69,6 +116,7 @@ class _RegisterScreen extends State<Register> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: phoneNumber,
                 decoration: InputDecoration(
                   hintText: 'Phone number',
                   prefixIcon: const Icon(Icons.phone),
@@ -85,6 +133,7 @@ class _RegisterScreen extends State<Register> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: studentId,
                 decoration: InputDecoration(
                   hintText: 'Student ID',
                   prefixIcon: const Icon(Icons.person),
@@ -106,17 +155,20 @@ class _RegisterScreen extends State<Register> {
                   minimumSize: const Size(double.infinity, 50),
                 ),
                 onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    Navigator.pushNamed(context, '/home');
+                  if (_formKey.currentState?.validate() ?? false) {
+                    register();
                   }
                 },
                 child: const Text('Register'),
               ),
               TextButton(
-                child: const Text('Already have an account? Login'),
                 onPressed: () {
                   Navigator.pop(context);
                 },
+                child: const Text(
+                  'Already have an account? Login',
+                  style: TextStyle(color: Colors.blue),
+                ),
               ),
             ],
           ),

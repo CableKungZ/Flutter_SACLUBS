@@ -1,9 +1,23 @@
-// File: main3.dart
-
 import 'package:flutter/material.dart';
+import 'activity_details_screen.dart'; 
+import 'add_activity_screen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'search_screen.dart';
+import 'profile_screen.dart';
+import 'homepage_screen.dart';
+import 'profile_screen.dart';
+
+
 
 class NotiScreen extends StatefulWidget {
-  const NotiScreen({super.key});
+  final String userID;
+
+  const NotiScreen({
+    super.key,
+    required this.userID,
+  });
 
   @override
   _NotiScreen createState() => _NotiScreen();
@@ -12,23 +26,96 @@ class NotiScreen extends StatefulWidget {
 class _NotiScreen extends State<NotiScreen> {
   int _selectedIndex = 2;
 
+  String? _studentId;
+  String? _isAdmin;
+  String? _phoneNumber;
+  String? _userId;
+  String? _email;
+
+  @override
+  void initState() {
+    super.initState();
+    getAccount();
+  }
+
+  Future<void> getAccount() async {
+    try {
+      var url = Uri.http("10.10.11.168", '/flutter/getAccount.php');
+      var response = await http.post(url, body: {
+        "userID": widget.userID,
+      });
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _studentId = data['studentId'];
+            _isAdmin = data['isAdmin'];
+            _phoneNumber = data['phoneNumber'];
+            _email = data['email'];
+            _userId = data['userId'];
+          });
+        } else {
+          Fluttertoast.showToast(
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            msg: data['message'],
+            toastLength: Toast.LENGTH_SHORT,
+          );
+        }
+      } else {
+        throw Exception('Failed to load account');
+      }
+    } catch (e) {
+      print('Error: $e');
+      Fluttertoast.showToast(
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_SHORT,
+      );
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
+    String userID = widget.userID;
+
     switch (index) {
       case 0:
-        Navigator.pushNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userID: userID),
+          ),
+        );
         break;
       case 1:
-        Navigator.pushNamed(context, '/search');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchScreen(userID: userID),
+          ),
+        );
         break;
       case 2:
-        Navigator.pushNamed(context, '/notification');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotiScreen(userID: userID),
+          ),
+        );
         break;
       case 3:
-        Navigator.pushNamed(context, '/profile');
+        Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => StudentInfoCard(userID: userID),
+          ),
+        );
         break;
     }
   }
@@ -37,30 +124,34 @@ class _NotiScreen extends State<NotiScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // Hide back button
         backgroundColor: Colors.red,
-        title: const Row(
+        title: Row(
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(Icons.person, color: Colors.grey),
             ),
-            SizedBox(width: 10),
-            Text('John Doe S123456789'),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _studentId ?? 'Loading...',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
       body: Container(
-        color: Colors.grey[200], // เพิ่มสีพื้นหลังเทาอ่อน
+        color: Colors.grey[200], // Light grey background color
         child: ListView(
           children: const [
             EventCard(
-              imagePath: 'assets/img/event_image_1.jpg',
-              title: 'กิจกรรมที่ใกล้จะมาถึงเร็วๆนี้ !!!',
+              title: 'กิจกรรมที่คุณติดตามใกล้จะมาถึงเร็วๆนี้ !!!',
               description: 'เข้าร่วมและชียร์! วันจันทร์ที่ 22 กรกฎาคม 2567',
             ),
             EventCard(
-              imagePath: 'assets/img/event_image_2.png',
-              title: 'กิจกรรมที่ใกล้จะมาถึงเร็วๆนี้ !!!',
+              title: 'กิจกรรมที่คุณติดตามใกล้จะมาถึงเร็วๆนี้ !!!',
               description: '4.8 KM วันจันทร์ที่ 22 กรกฎาคม 2567',
             ),
           ],
@@ -86,14 +177,14 @@ class _NotiScreen extends State<NotiScreen> {
 }
 
 class EventCard extends StatelessWidget {
-  final String imagePath;
   final String title;
   final String description;
 
-  const EventCard(
-      {super.key, required this.imagePath,
-      required this.title,
-      required this.description});
+  const EventCard({
+    super.key,
+    required this.title,
+    required this.description,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -103,12 +194,6 @@ class EventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(
-            imagePath,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: 200,
-          ),
           Padding(
             padding: const EdgeInsets.all(8),
             child: Column(
@@ -124,24 +209,6 @@ class EventCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(description, style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      child: const Text('รายละเอียดเพิ่มเติม',
-                          style: TextStyle(color: Colors.red)),
-                      onPressed: () {
-                        // Handle button press
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.red),
-                      onPressed: () {
-                        // Handle notification button press
-                      },
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

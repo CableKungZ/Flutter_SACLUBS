@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'homepage_screen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,23 +16,36 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _rememberMe = false;
   bool _isLoading = false;
+  TextEditingController user = TextEditingController();
+  TextEditingController pass = TextEditingController();
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
 
-      // Simulate login process
-      await Future.delayed(Duration(seconds: 2));
+Future<void> login() async {
+  var url = Uri.http("10.10.11.168", '/flutter/login.php');
+  var response = await http.post(url, body: {
+    "email": user.text,
+    "password": pass.text,
+  });
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      Navigator.pushNamed(context, '/home');
-    }
+  var data = json.decode(response.body);
+  if (data['status'] == 'success') {
+    String userID = data['userID'];
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(userID: userID),
+      ),
+    );
+  } else {
+    Fluttertoast.showToast(
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      msg: data['message'],
+      toastLength: Toast.LENGTH_SHORT,
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +67,15 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
               TextFormField(
+                controller: user,
                 decoration: InputDecoration(
-                  hintText: 'Email',
+                  hintText: 'Phone Number',
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                validator: (value) {
+                /* validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
                   }
@@ -64,10 +83,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     return 'Please enter a valid email address';
                   }
                   return null;
-                },
+                }, */
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: pass,
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: 'Password',
@@ -76,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                validator: (value) {
+                /* validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
                   }
@@ -84,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     return 'Password must be at least 6 characters long';
                   }
                   return null;
-                },
+                }, */
               ),
               const SizedBox(height: 8),
               Row(
@@ -106,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   backgroundColor: Colors.red,
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                onPressed: _isLoading ? null : _login,
+                onPressed: _isLoading ? null : login,
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Login'),

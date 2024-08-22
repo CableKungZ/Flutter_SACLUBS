@@ -1,13 +1,77 @@
 import 'package:flutter/material.dart';
+import 'activity_details_screen.dart';
+import 'add_activity_screen.dart';
+import 'search_screen.dart';
+import 'notification_screen.dart';
+import 'homepage_screen.dart';
+import 'EditProfileScreen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class StudentInfoCard extends StatefulWidget {
-  const StudentInfoCard({super.key});
+  final String userID;
+
+  const StudentInfoCard({super.key, required this.userID});
 
   @override
-  _StudentInfoCard createState() => _StudentInfoCard();
+  _StudentInfoCardState createState() => _StudentInfoCardState();
 }
-class _StudentInfoCard extends State<StudentInfoCard> {
+
+class _StudentInfoCardState extends State<StudentInfoCard> {
   int _selectedIndex = 3;
+
+  String? _studentId;
+  String? _isAdmin;
+  String? _phoneNumber;
+  String? _userId;
+  String? _email;
+
+  @override
+  void initState() {
+    super.initState();
+    print('User ID: ${widget.userID}');
+    getAccount();
+  }
+
+  Future<void> getAccount() async {
+    try {
+      var url = Uri.http("10.10.11.168", '/flutter/getAccount.php');
+      var response = await http.post(url, body: {
+        "userID": widget.userID,
+      });
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _studentId = data['studentId'];
+            _isAdmin = data['isAdmin'];
+            _phoneNumber = data['phoneNumber'];
+            _email = data['email'];
+            _userId = data['userID'];
+          });
+        } else {
+          Fluttertoast.showToast(
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            msg: data['message'],
+            toastLength: Toast.LENGTH_SHORT,
+          );
+        }
+      } else {
+        throw Exception('Failed to load account');
+      }
+    } catch (e) {
+      print('Error: $e');
+      Fluttertoast.showToast(
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_SHORT,
+      );
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -16,19 +80,35 @@ class _StudentInfoCard extends State<StudentInfoCard> {
 
     switch (index) {
       case 0:
-        Navigator.pushNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userID: widget.userID),
+          ),
+        );
         break;
       case 1:
-        Navigator.pushNamed(context, '/search');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchScreen(userID: widget.userID),
+          ),
+        );
         break;
       case 2:
-        Navigator.pushNamed(context, '/notification');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotiScreen(userID: widget.userID),
+          ),
+        );
         break;
       case 3:
-        Navigator.pushNamed(context, '/profile');
+        // No need to push the same screen; you might want to handle a refresh if needed
         break;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,15 +119,16 @@ class _StudentInfoCard extends State<StudentInfoCard> {
             // Header
             Container(
               padding: const EdgeInsets.all(16),
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      'John Doe S123456789',
+                      _isAdmin == "1" ? 'Admin Profile' : 'Student Profile',
                       style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -65,22 +146,37 @@ class _StudentInfoCard extends State<StudentInfoCard> {
             Expanded(
               child: Container(
                 color: Colors.white,
-                child: const SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      InfoField(label: 'Student_ID', value: 'S123456789'),
-                      InfoField(label: 'First Name', value: 'John'),
-                      InfoField(label: 'Sur Name', value: 'Doe'),
-                      InfoField(label: 'Phone number', value: '1234567890'),
-                      InfoField(label: 'Email', value: 'john@example.com'),
-                      SizedBox(height: 20),
+                      InfoField(label: 'Email', value: _email ?? 'Not Available'),
+                      InfoField(label: 'Student ID', value: _studentId ?? 'Not Available'),
+                      InfoField(label: 'Phone Number', value: _phoneNumber ?? 'Not Available'),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          bool? result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditProfileScreen(
+                                userID: widget.userID,
+                                phone: _phoneNumber ?? '',
+                                email: _email ?? '',
+                              ),
+                            ),
+                          );
+                          if (result == true) {
+                            getAccount();
+                          }
+                        },
+                        child: const Text('Edit Profile'),
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-
           ],
         ),
       ),
@@ -128,9 +224,10 @@ class InfoField extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
           const SizedBox(width: 10),

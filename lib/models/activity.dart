@@ -1,25 +1,34 @@
-class ActivityDetailsArguments {
-  final String title;
-  final String imagePath;
-  final String description;
-  final bool isJoinable;
+class Activity {
+  final String id;
+  String title;
+  String description;
+  String imageUrl;
 
-  ActivityDetailsArguments({
+  Activity({
+    required this.id,
     required this.title,
-    required this.imagePath,
     required this.description,
-    this.isJoinable = false,
+    required this.imageUrl,
   });
 }
 
-class EditActivityArguments {
-  final String title;
-  final String description;
-  final String imagePath;
+class ActivityManager {
+  final List<Activity> _activities = [];
 
-  EditActivityArguments({
-    required this.title,
-    required this.description,
-    required this.imagePath,
-  });
+  List<Activity> get activities => _activities;
+
+  void addActivity(Activity activity) {
+    _activities.add(activity);
+  }
+
+  void editActivity(String id, Activity updatedActivity) {
+    final index = _activities.indexWhere((activity) => activity.id == id);
+    if (index != -1) {
+      _activities[index] = updatedActivity;
+    }
+  }
+
+  void removeActivity(String id) {
+    _activities.removeWhere((activity) => activity.id == id);
+  }
 }
