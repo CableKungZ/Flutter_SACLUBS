@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'activity_details_screen.dart'; 
 import 'add_activity_screen.dart';
@@ -8,9 +7,6 @@ import 'dart:convert';
 import 'search_screen.dart';
 import 'profile_screen.dart';
 import 'notification_screen.dart';
-import 'profile_screen.dart';
-
-
 
 class HomeScreen extends StatefulWidget {
   final String userID;
@@ -23,39 +19,51 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  List<Map<String, dynamic>> _activities = [
-    {
-      'title': 'เชิญชวนนักศึกษาและบุคลากร',
-      'imagePath': 'assets/img/event_image_1.jpg',
-      'description': 'รายละเอียดกิจกรรม...',
-      'isJoinable': false,
-      'category': "ไม่มี",
-      'score': "0",
-      'datetime':"2024-08-22T00:00:00.000",
-      'location':" ไทยบุรี"
-    },
-    {
-      'title': 'WU HAPPY FUNRUN#7',
-      'imagePath': 'assets/img/event_image_2.png',
-      'description': '4.8 KM วันอาทิตย์ที่ 25 กุมภาพันธ์ 2567',
-      'isJoinable': true,
-      'category': "ใจอาสา",
-      'score': "3",
-      'datetime':"2024-08-22T00:00:00.000",
-      'location':" ไทยบุรี"
-    },
-  ];
-
+  List<Map<String, dynamic>> _activities = [];
   String? _studentId;
   String? _isAdmin;
   String? _phoneNumber;
   String? _email;
   String? _userId;
-
+  
   @override
   void initState() {
     super.initState();
     getAccount();
+    fetchActivities(); // Fetch activities when the screen initializes
+  }
+
+  Future<void> fetchActivities() async {
+    try {
+      var url = Uri.http("10.10.11.168", '/flutter/getActivities.php'); // Replace with your server's URL
+      var response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _activities = List<Map<String, dynamic>>.from(data['activities']);
+          });
+        } else {
+          Fluttertoast.showToast(
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            msg: data['message'],
+            toastLength: Toast.LENGTH_SHORT,
+          );
+        }
+      } else {
+        throw Exception('Failed to load activities');
+      }
+    } catch (e) {
+      print('Error: $e');
+      Fluttertoast.showToast(
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_SHORT,
+      );
+    }
   }
 
   Future<void> getAccount() async {
@@ -74,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _phoneNumber = data['phoneNumber'];
             _email = data['email'];
             _userId = data['userId'];
-
           });
         } else {
           Fluttertoast.showToast(
@@ -97,7 +104,8 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
-
+  
+  
 
   void _onItemTapped(int index) {
     setState(() {
@@ -109,47 +117,93 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (index) {
       case 0:
         Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(userID: userID),
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userID: userID),
           ),
         );
         break;
       case 1:
         Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SearchScreen(userID: userID),
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchScreen(userID: userID),
           ),
         );
         break;
       case 2:
         Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => NotiScreen(userID: userID),
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotiScreen(userID: userID),
           ),
         );
         break;
       case 3:
         Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StudentInfoCard(userID: userID),
+          context,
+          MaterialPageRoute(
+            builder: (context) => StudentInfoCard(userID: userID),
           ),
         );
         break;
     }
   }
 
-  Future<void> _addActivity() async {
-    final result = await Navigator.pushNamed(context, '/addActivity') as Map<String, dynamic>?;
-    if (result != null) {
-      setState(() {
-        _activities.add(result);
-      });
+Future<void> _addActivity() async {
+  final result = await Navigator.pushNamed(context, '/addActivity') as Map<String, dynamic>?;
+
+  if (result != null) {
+    try {
+      var url = Uri.http("10.10.11.168", '/flutter/addActivity.php');
+
+      var response = await http.post(
+        url,
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: {
+          "id": result['id']?.toString() ?? '',  // Ensure 'id' is included
+          "title": result['title'] ?? '',
+          "description": result['description'] ?? '',
+          "scoreType": result['category'] ?? '',
+          "score": result['score']?.toString() ?? '0',
+        }
+      );
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _activities.add(result);
+          });
+          Fluttertoast.showToast(
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            msg: 'Activity updated successfully',
+            toastLength: Toast.LENGTH_SHORT,
+          );
+        } else {
+          Fluttertoast.showToast(
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            msg: data['message'],
+            toastLength: Toast.LENGTH_SHORT,
+          );
+        }
+      } else {
+        throw Exception('Failed to add activity');
+      }
+    } catch (e) {
+      print('Error: $e');
+      Fluttertoast.showToast(
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_SHORT,
+      );
     }
   }
+}
+
 
   Future<void> _editActivity(int index) async {
     final updatedActivity = await Navigator.pushNamed(
@@ -179,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false, // ซ่อนปุ่ม Back
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.red,
         title: Row(
           children: [
@@ -209,25 +263,27 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: _activities.length,
-        itemBuilder: (context, index) {
-          final activity = _activities[index];
-          return GestureDetector(
-            onTap: () => _editActivity(index),
-            child: EventCard(
-              title: activity['title']!,
-              imagePath: activity['imagePath']!,
-              description: activity['description']!,
-              isJoinable: activity['isJoinable'] as bool,
-              category: activity['category']!,
-              score: activity['score']!,
-              datetime: activity['datetime']!,
-              location: activity['location']!,
+      body: _activities.isEmpty
+          ? Center(child: CircularProgressIndicator()) // Show a loading indicator if activities are not loaded yet
+          : ListView.builder(
+              itemCount: _activities.length,
+              itemBuilder: (context, index) {
+                final activity = _activities[index];
+                return GestureDetector(
+                  onTap: () => _editActivity(index),
+                  child: EventCard(
+                    title: activity['title']!,
+                    imagePath: activity['imagePath']!,
+                    description: activity['description']!,
+                    isJoinable: activity['isJoinable'] as bool,
+                    category: activity['category']!,
+                    score: activity['score']!,
+                    datetime: activity['datetime']!,
+                    location: activity['location']!,
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -243,11 +299,13 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
-      floatingActionButton: _isAdmin == '1' ? FloatingActionButton(
-        onPressed: _addActivity,
-        child: const Icon(Icons.add),
-        backgroundColor: Colors.blue,
-      ) : null, // Conditionally display the FloatingActionButton
+      floatingActionButton: _isAdmin == '1'
+          ? FloatingActionButton(
+              onPressed: _addActivity,
+              child: const Icon(Icons.add),
+              backgroundColor: Colors.blue,
+            )
+          : null,
     );
   }
 }
