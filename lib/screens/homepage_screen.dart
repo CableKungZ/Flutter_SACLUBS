@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'activity_details_screen.dart'; 
-import 'add_activity_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -30,12 +29,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     getAccount();
-    fetchActivities(); // Fetch activities when the screen initializes
+    fetchActivities();
   }
 
   Future<void> fetchActivities() async {
     try {
-      var url = Uri.http("10.10.11.168", '/flutter/getActivities.php'); // Replace with your server's URL
+      var url = Uri.http("10.10.11.168", '/flutter/getActivities.php'); 
       var response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -161,20 +160,22 @@ Future<void> _addActivity() async {
         url,
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: {
-          "id": result['id']?.toString() ?? '',  // Ensure 'id' is included
-          "title": result['title'] ?? '',
-          "description": result['description'] ?? '',
-          "scoreType": result['category'] ?? '',
+          "id": result['id']?.toString() ?? '',  
+          "title": result['title'] ?? 'Null',
+          "imagePath": result['imagePath'] ?? 'https://www.shutterstock.com/image-vector/slogan-oops-sorry-funny-vector-260nw-1514682761.jpg',
+          "description": result['description'] ?? 'Null',
+          "scoreType": result['category'] ?? 'Null',
           "score": result['score']?.toString() ?? '0',
+          "location": result['location']?.toString() ?? '0',
+          "datetime": result['datetime']?.toString() ?? '0',
+          "isJoinable" : result['isJoinable']?.toString() ?? '0'
         }
       );
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         if (data['status'] == 'success') {
-          setState(() {
-            _activities.add(result);
-          });
+          fetchActivities();
           Fluttertoast.showToast(
             backgroundColor: Colors.green,
             textColor: Colors.white,
@@ -205,11 +206,13 @@ Future<void> _addActivity() async {
 }
 
 
-  Future<void> _editActivity(int index) async {
+  Future<void> _detailActivity(int index) async {
+    final reload = false;
     final updatedActivity = await Navigator.pushNamed(
       context,
       '/activityDetail',
       arguments: ActivityDetailsArguments(
+        activityId: _activities[index]['id']!,
         title: _activities[index]['title']!,
         imagePath: _activities[index]['imagePath']!,
         description: _activities[index]['description']!,
@@ -218,15 +221,12 @@ Future<void> _addActivity() async {
         score: _activities[index]['score']!,
         datetime: _activities[index]['datetime']!,
         location: _activities[index]['location']!,
-
       ),
     ) as Map<String, dynamic>?;
 
-    if (updatedActivity != null) {
-      setState(() {
-        _activities[index] = updatedActivity;
-      });
-    }
+    setState(() {
+        fetchActivities();
+    });
   }
 
   @override
@@ -270,8 +270,9 @@ Future<void> _addActivity() async {
               itemBuilder: (context, index) {
                 final activity = _activities[index];
                 return GestureDetector(
-                  onTap: () => _editActivity(index),
+                  onTap: () => _detailActivity(index),
                   child: EventCard(
+                    activityId: activity['id']!,
                     title: activity['title']!,
                     imagePath: activity['imagePath']!,
                     description: activity['description']!,
@@ -311,6 +312,7 @@ Future<void> _addActivity() async {
 }
 
 class EventCard extends StatelessWidget {
+  final String activityId;
   final String title;
   final String imagePath;
   final String description;
@@ -322,6 +324,7 @@ class EventCard extends StatelessWidget {
 
   const EventCard({
     super.key,
+    required this.activityId,
     required this.title,
     required this.imagePath,
     required this.description,
@@ -339,18 +342,20 @@ class EventCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.network(
-            imagePath,
-            fit: BoxFit.cover,
-            height: 200,
-            width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.grey[300],
-                child: const Center(child: Text('Image not found')),
-              );
-            },
-          ),
+          // Conditionally render the image block if imagePath is not null or empty
+          if (imagePath.isNotEmpty && Uri.tryParse(imagePath)?.isAbsolute == true)
+            Image.network(
+              imagePath,
+              fit: BoxFit.cover,
+              height: 200,
+              width: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                // If image fails to load, do not display the image block
+                return SizedBox.shrink();
+              },
+            )
+          else
+            SizedBox.shrink(), // Do not display anything if imagePath is invalid
           Padding(
             padding: const EdgeInsets.all(8),
             child: Column(
@@ -359,32 +364,16 @@ class EventCard extends StatelessWidget {
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(description),
-                const SizedBox(height: 8),
-                Text("คะแนน $category จำนวน : $score"),
+                if (category != "ไม่มี")
+                  Text(
+                    "เมื่อเข้าร่วม จะได้รับ ${category} ${score} คะแนน",
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 const SizedBox(height: 8),
                 Text("วันเวลากิจกรรม $datetime"),
                 const SizedBox(height: 8),
                 Text("สถานที่กิจกรรม $location"),
                 const SizedBox(height: 8),
-                TextButton(
-                  child: const Text('More'),
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/activityDetail',
-                      arguments: ActivityDetailsArguments(
-                        title: title,
-                        imagePath: imagePath,
-                        description: description,
-                        isJoinable: isJoinable,
-                        category: category,
-                        score: score,
-                        datetime: datetime,
-                        location: location,
-                      ),
-                    );
-                  },
-                ),
               ],
             ),
           ),
@@ -393,3 +382,4 @@ class EventCard extends StatelessWidget {
     );
   }
 }
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AddActivityScreen extends StatefulWidget {
+  final String? activityId;
   final String? title;
   final String? description;
   final String? imagePath;
@@ -12,6 +13,7 @@ class AddActivityScreen extends StatefulWidget {
 
   const AddActivityScreen({
     super.key,
+    this.activityId,
     this.title,
     this.description,
     this.imagePath,
@@ -36,16 +38,22 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
   DateTime _selectedDateTime = DateTime.now();
 
   String _selectedDropdownValue = "ไม่มี";
-  bool _isJoinable = false;
+  bool _isJoinable = true;
+
+  // Validation messages
+  String? _titleError;
+  String? _descriptionError;
+  String? _scoreError;
 
   @override
   void initState() {
     super.initState();
+    
     _titleController.text = widget.title ?? '';
     _descriptionController.text = widget.description ?? '';
     _imageUrlController.text = widget.imagePath ?? '';
     _selectedDropdownValue = widget.category ?? "ไม่มี";
-    _scoreController.text = widget.score ?? '0';
+    _scoreController.text = widget.score ?? '';
     _locationController.text = widget.location ?? '';
     _isJoinable = widget.isJoinable ?? false;
     
@@ -55,14 +63,50 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
   }
 
   void _saveActivity() {
-    final title = _titleController.text;
-    final description = _descriptionController.text;
-    final imageUrl = _imageUrlController.text;
-    final score = _scoreController.text;
-    final location = _locationController.text;
+    final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
+    final score = _scoreController.text.trim();
+
+    bool isValid = true;
+
+    // Clear previous error messages
+    setState(() {
+      _titleError = null;
+      _descriptionError = null;
+      _scoreError = null;
+    });
+
+    // Validation
+    if (title.isEmpty) {
+      setState(() {
+        _titleError = 'Title cannot be empty';
+      });
+      isValid = false;
+    }
+
+    if (description.isEmpty) {
+      setState(() {
+        _descriptionError = 'Description cannot be empty';
+      });
+      isValid = false;
+    }
+
+    if (_selectedDropdownValue != 'ไม่มี' && score.isEmpty) {
+      setState(() {
+        _scoreError = 'Score cannot be empty for the selected category';
+      });
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    final activityId = widget.activityId;
+    final imageUrl = _imageUrlController.text.trim();
+    final location = _locationController.text.trim();
     final datetime = _selectedDateTime.toIso8601String();
 
     final updatedActivity = {
+      'activityId': activityId,
       'title': title,
       'description': description,
       'imagePath': imageUrl,
@@ -124,14 +168,34 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
                     ),
               ),
               const SizedBox(height: 16.0),
-              _buildTextField(_titleController, 'Title'),
-              _buildTextField(_descriptionController, 'Description'),
-              _buildTextField(_locationController, 'Location'),
+              _buildTextField(
+                controller: _titleController,
+                labelText: 'Title',
+                errorText: _titleError,
+              ),
+              _buildTextField(
+                controller: _descriptionController,
+                labelText: 'Description',
+                errorText: _descriptionError,
+              ),
+              _buildTextField(
+                controller: _locationController,
+                labelText: 'Location',
+              ),
               _buildDateTimeButton(),
-              _buildTextField(_imageUrlController, 'Image URL'),
+              _buildTextField(
+                controller: _imageUrlController,
+                labelText: 'Image URL',
+              ),
               const SizedBox(height: 16.0),
               _buildDropdown(),
-              if (_selectedDropdownValue != 'ไม่มี') _buildTextField(_scoreController, 'Score', keyboardType: TextInputType.number),
+              if (_selectedDropdownValue != 'ไม่มี')
+                _buildTextField(
+                  controller: _scoreController,
+                  labelText: 'Score',
+                  keyboardType: TextInputType.number,
+                  errorText: _scoreError,
+                ),
               const SizedBox(height: 16.0),
               _buildJoinableSwitch(),
               const SizedBox(height: 24.0),
@@ -150,17 +214,36 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String labelText, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    TextInputType keyboardType = TextInputType.text,
+    String? errorText,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: labelText,
-          border: OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            decoration: InputDecoration(
+              labelText: labelText,
+              border: OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+              errorText: errorText,
+            ),
+          ),
+          if (errorText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                errorText,
+                style: TextStyle(color: Colors.red.shade700),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -216,7 +299,6 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
           _isJoinable = value;
         });
       },
-      contentPadding: EdgeInsets.zero,
     );
   }
 }
