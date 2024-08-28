@@ -1,221 +1,256 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
+import 'admin_account_manage_screen.dart';
+import 'search_screen.dart';
+import 'notification_screen.dart';
+import 'homepage_screen.dart';
+import 'EditProfileScreen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class AdminAccountManageScreen extends StatefulWidget {
+class StudentInfoCard extends StatefulWidget {
+  final String userID;
+
+  const StudentInfoCard({super.key, required this.userID});
+
   @override
-  _AdminAccountManageScreenState createState() =>
-      _AdminAccountManageScreenState();
+  _StudentInfoCardState createState() => _StudentInfoCardState();
 }
 
-class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
-  final TextEditingController _idController = TextEditingController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  Map<String, String> accountData = {};
-  bool isEditing = false;
+class _StudentInfoCardState extends State<StudentInfoCard> {
+  int _selectedIndex = 3;
 
-  Future<void> loadAccount() async {
-    var url = Uri.parse("http://10.10.11.168/flutter/getAccountManager.php");
-    var response = await http.post(url, body: {
-      "id": _idController.text,
-    });
+  String? _studentId;
+  String? _isAdmin;
+  String? _phoneNumber;
+  String? _userId;
+  String? _email;
 
-    if (response.statusCode == 200) {
-      var data = json.decode(response.body);
-      // Parse the response and update accountData
-      setState(() {
-        accountData = {
-          "ID": data['userID'],
-          "EMAIL": data['email'],
-          "ROLE": data['isAdmin'] == "1" ? "ADMIN" : "STUDENT",
-          "StudentID": data['studentId'],
-          "PhoneNumber": data['phoneNumber'],
-        };
+  @override
+  void initState() {
+    super.initState();
+    print('User ID: ${widget.userID}');
+    getAccount();
+  }
+
+  Future<void> getAccount() async {
+    try {
+      var url = Uri.http("10.10.11.168", '/flutter/getAccount.php');
+      var response = await http.post(url, body: {
+        "userID": widget.userID,
       });
-    } else {
-      // Handle error
-      print("Failed to load account data");
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          setState(() {
+            _studentId = data['studentId'];
+            _isAdmin = data['isAdmin'];
+            _phoneNumber = data['phoneNumber'];
+            _email = data['email'];
+            _userId = data['userID'];
+          });
+        } else {
+          Fluttertoast.showToast(
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            msg: data['message'],
+            toastLength: Toast.LENGTH_SHORT,
+          );
+        }
+      } else {
+        throw Exception('Failed to load account');
+      }
+    } catch (e) {
+      print('Error: $e');
+      Fluttertoast.showToast(
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        msg: 'An error occurred. Please try again.',
+        toastLength: Toast.LENGTH_SHORT,
+      );
     }
   }
 
-  void editAccount() {
+  void _onItemTapped(int index) {
     setState(() {
-      isEditing = true;
+      _selectedIndex = index;
     });
-  }
 
-  void saveAccount() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // Save the updated account information
-      setState(() {
-        isEditing = false;
-      });
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(userID: widget.userID),
+          ),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchScreen(userID: widget.userID),
+          ),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotiScreen(userID: widget.userID),
+          ),
+        );
+        break;
+      case 3:
+        // No need to push the same screen; you might want to handle a refresh if needed
+        break;
     }
-  }
-
-  void cancelEdit() {
-    setState(() {
-      isEditing = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Manage Account'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        color: Colors.red,
         child: Column(
           children: [
-            Form(
-              key: _formKey, // Use the form key for validation
-              child: Column(
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
-                  TextFormField(
-                    controller: _idController,
-                    decoration: InputDecoration(labelText: 'ID'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'ID is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        loadAccount();
-                      }
-                    },
-                    child: Text('LOAD ACCOUNT BY ID or PhoneNumber'),
+                  Expanded(
+                    child: Text(
+                      _isAdmin == "1" ? 'Admin Profile' : 'Student Profile',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ],
               ),
             ),
-            if (accountData.isNotEmpty)
-              Column(
-                children: [
-                  if (isEditing)
-                    // Removed extra form
-                    Column(
-                      children: [
-                        TextFormField(
-                          initialValue: accountData['EMAIL'],
-                          decoration: InputDecoration(labelText: 'Email'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Email is required';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) => accountData['EMAIL'] = value,
-                        ),
-                        DropdownButtonFormField<String>(
-                          value: accountData['ROLE'],
-                          items: ['ADMIN', 'STUDENT'].map((String role) {
-                            return DropdownMenuItem<String>(
-                              value: role,
-                              child: Text(role),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              accountData['ROLE'] = value ?? 'STUDENT';
-                            });
-                          },
-                          decoration: InputDecoration(labelText: 'Role'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Role is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        TextFormField(
-                          initialValue: '',
-                          decoration: InputDecoration(
-                              labelText:
-                                  'Password (Leave blank for no change)'),
-                        ),
-                        TextFormField(
-                          initialValue: accountData['StudentID'],
-                          decoration: InputDecoration(
-                              labelText: 'StudentID / ManagerID / AdminID'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'StudentID is required';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) =>
-                              accountData['StudentID'] = value,
-                        ),
-                        TextFormField(
-                          initialValue: accountData['PhoneNumber'],
-                          decoration:
-                              InputDecoration(labelText: 'Phone Number'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Phone Number is required';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) =>
-                              accountData['PhoneNumber'] = value,
-                        ),
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              onPressed: saveAccount,
-                              child: Text('SAVE'),
+            // Profile Picture
+            const CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.grey,
+              child: Icon(Icons.person, size: 80, color: Colors.white),
+            ),
+            const SizedBox(height: 20),
+            // Main content
+            Expanded(
+              child: Container(
+                color: Colors.white,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      InfoField(label: 'Email', value: _email ?? 'Not Available'),
+                      InfoField(label: 'Student ID', value: _studentId ?? 'Not Available'),
+                      InfoField(label: 'Phone Number', value: _phoneNumber ?? 'Not Available'),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () async {
+                          bool? result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditProfileScreen(
+                                userID: widget.userID,
+                                phone: _phoneNumber ?? '',
+                                email: _email ?? '',
+                              ),
                             ),
-                            SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: cancelEdit,
-                              child: Text('CANCEL'),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red),
+                          );
+                          if (result == true) {
+                            getAccount();
+                          }
+                        },
+                        child: const Text('Edit Profile'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          bool? result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AdminAccountManageScreen(),
                             ),
-                          ],
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: [
-                        Text('ID: ${accountData['ID']}'),
-                        Text('Email: ${accountData['EMAIL']}'),
-                        Text('Role: ${accountData['ROLE']}'),
-                        Text(
-                            'StudentID / ManagerID / AdminID: ${accountData['StudentID']}'),
-                        Text('Phone Number: ${accountData['PhoneNumber']}'),
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              onPressed: editAccount,
-                              child: Text('EDIT'),
-                            ),
-                            SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  accountData.clear();
-                                });
-                              },
-                              child: Text('CANCEL'),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                ],
+                          );
+                          if (result == true) {
+                            getAccount();
+                          }
+                        },
+                        child: const Text('Admin Account Manage'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+            ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.purple,
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        onTap: _onItemTapped,
+        currentIndex: _selectedIndex,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.notifications), label: 'Notifications'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+      ),
+    );
+  }
+}
+
+class InfoField extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const InfoField({super.key, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.horizontal(left: Radius.circular(5)),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.black, fontSize: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -22,7 +22,6 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
 
     if (response.statusCode == 200) {
       var data = json.decode(response.body);
-      // Parse the response and update accountData
       setState(() {
         accountData = {
           "ID": data['userID'],
@@ -30,10 +29,10 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
           "ROLE": data['isAdmin'] == "1" ? "ADMIN" : "STUDENT",
           "StudentID": data['studentId'],
           "PhoneNumber": data['phoneNumber'],
+          "password": '', // Ensure the password field is included
         };
       });
     } else {
-      // Handle error
       print("Failed to load account data");
     }
   }
@@ -44,12 +43,39 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
     });
   }
 
-  void saveAccount() {
+  void saveAccount() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // Save the updated account information
-      setState(() {
-        isEditing = false;
+      final url = Uri.parse("http://10.10.11.168/flutter/editAccountManager.php");
+
+      final response = await http.post(url, body: {
+        "userID": accountData['ID'],
+        "phone": accountData['PhoneNumber'],
+        "email": accountData['EMAIL'],
+        "password": accountData['password'] ?? '', // Send empty string if password is null
+        "studentId": accountData['StudentID'],
+        "isAdmin": accountData['ROLE'] == 'ADMIN' ? '1' : '0',
       });
+
+      if (response.statusCode == 200) {
+        var responseData = json.decode(response.body);
+
+        if (responseData['status'] == 'success') {
+          setState(() {
+            isEditing = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Account updated successfully')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update account: ${responseData['message']}')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to connect to server')),
+        );
+      }
     }
   }
 
@@ -89,7 +115,7 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
                         loadAccount();
                       }
                     },
-                    child: Text('LOAD ACCOUNT BY ID or PhoneNumber'),
+                    child: Text('LOAD ACCOUNT BY ID'),
                   ),
                 ],
               ),
@@ -98,7 +124,6 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
               Column(
                 children: [
                   if (isEditing)
-                    // Removed extra form
                     Column(
                       children: [
                         TextFormField(
@@ -134,10 +159,10 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
                           },
                         ),
                         TextFormField(
-                          initialValue: '',
+                          initialValue: accountData['password'],
                           decoration: InputDecoration(
-                              labelText:
-                                  'Password (Leave blank for no change)'),
+                              labelText: 'Password (Leave blank for no change)'),
+                          onChanged: (value) => accountData['password'] = value,
                         ),
                         TextFormField(
                           initialValue: accountData['StudentID'],
@@ -149,8 +174,7 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
                             }
                             return null;
                           },
-                          onChanged: (value) =>
-                              accountData['StudentID'] = value,
+                          onChanged: (value) => accountData['StudentID'] = value,
                         ),
                         TextFormField(
                           initialValue: accountData['PhoneNumber'],
@@ -162,8 +186,7 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
                             }
                             return null;
                           },
-                          onChanged: (value) =>
-                              accountData['PhoneNumber'] = value,
+                          onChanged: (value) => accountData['PhoneNumber'] = value,
                         ),
                         Row(
                           children: [
