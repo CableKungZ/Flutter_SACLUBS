@@ -147,13 +147,10 @@ class _NotiScreen extends State<NotiScreen> {
         child: ListView(
           children: const [
             EventCard(
-              title: 'กิจกรรมที่คุณติดตามใกล้จะมาถึงเร็วๆนี้ !!!',
-              description: 'เข้าร่วมและชียร์! วันจันทร์ที่ 22 กรกฎาคม 2567',
+              title: 'เข้าร่วมเชียร์',
+              remaining: 'เหลือระยะเวลาอีก 1 วัน 20 ชั่วโมง 20 นาที ก่อนเริ่มกิจกรรม',
             ),
-            EventCard(
-              title: 'กิจกรรมที่คุณติดตามใกล้จะมาถึงเร็วๆนี้ !!!',
-              description: '4.8 KM วันจันทร์ที่ 22 กรกฎาคม 2567',
-            ),
+
           ],
         ),
       ),
@@ -178,12 +175,12 @@ class _NotiScreen extends State<NotiScreen> {
 
 class EventCard extends StatelessWidget {
   final String title;
-  final String description;
+  final String remaining;
 
   const EventCard({
     super.key,
     required this.title,
-    required this.description,
+    required this.remaining,
   });
 
   @override
@@ -207,7 +204,7 @@ class EventCard extends StatelessWidget {
                       color: Colors.red),
                 ),
                 const SizedBox(height: 4),
-                Text(description, style: const TextStyle(fontSize: 14)),
+                Text(remaining, style: const TextStyle(fontSize: 14)),
                 const SizedBox(height: 8),
               ],
             ),
