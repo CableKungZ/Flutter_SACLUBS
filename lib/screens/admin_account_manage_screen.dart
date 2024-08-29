@@ -101,7 +101,7 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
                 children: [
                   TextFormField(
                     controller: _idController,
-                    decoration: InputDecoration(labelText: 'ID'),
+                    decoration: InputDecoration(labelText: 'ID/PhoneNumber/StudentId'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'ID is required';
@@ -115,7 +115,7 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
                         loadAccount();
                       }
                     },
-                    child: Text('LOAD ACCOUNT BY ID'),
+                    child: Text('LOAD ACCOUNT BY ID/PhoneNumber/StudentId'),
                   ),
                 ],
               ),
