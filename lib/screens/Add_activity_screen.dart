@@ -55,7 +55,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     _selectedDropdownValue = widget.category ?? "ไม่มี";
     _scoreController.text = widget.score ?? '';
     _locationController.text = widget.location ?? '';
-    _isJoinable = widget.isJoinable ?? false;
+    _isJoinable = widget.isJoinable ?? true;
     
     if (widget.datetime != null) {
       _selectedDateTime = DateTime.parse(widget.datetime!);
