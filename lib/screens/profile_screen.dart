@@ -3,21 +3,21 @@ import 'admin_account_manage_screen.dart';
 import 'search_screen.dart';
 import 'notification_screen.dart';
 import 'homepage_screen.dart';
-import 'EditProfileScreen.dart';
+import 'edit_profile_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class StudentInfoCard extends StatefulWidget {
+class ProfileScreen extends StatefulWidget {
   final String userID;
 
-  const StudentInfoCard({super.key, required this.userID});
+  const ProfileScreen({super.key, required this.userID});
 
   @override
   _StudentInfoCardState createState() => _StudentInfoCardState();
 }
 
-class _StudentInfoCardState extends State<StudentInfoCard> {
+class _StudentInfoCardState extends State<ProfileScreen> {
   int _selectedIndex = 3;
 
   String? _studentId;

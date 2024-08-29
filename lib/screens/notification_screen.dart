@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'activity_details_screen.dart'; 
-import 'add_activity_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'search_screen.dart';
-import 'profile_screen.dart';
-import 'homepage_screen.dart';
-import 'profile_screen.dart';
-
-
+import '/screens/homepage_screen.dart';
+import '/screens/search_screen.dart';
+import '/screens/profile_screen.dart';
+import 'package:intl/intl.dart';
 
 class NotiScreen extends StatefulWidget {
   final String userID;
@@ -20,60 +16,64 @@ class NotiScreen extends StatefulWidget {
   });
 
   @override
-  _NotiScreen createState() => _NotiScreen();
+  _NotiScreenState createState() => _NotiScreenState();
 }
 
-class _NotiScreen extends State<NotiScreen> {
+class _NotiScreenState extends State<NotiScreen> {
   int _selectedIndex = 2;
-
-  String? _studentId;
-  String? _isAdmin;
-  String? _phoneNumber;
-  String? _userId;
-  String? _email;
+  List<dynamic> _activities = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    getAccount();
+    fetchUserActivities();
   }
 
-  Future<void> getAccount() async {
-    try {
-      var url = Uri.http("10.10.11.168", '/flutter/getAccount.php');
-      var response = await http.post(url, body: {
-        "userID": widget.userID,
+  Future<void> fetchUserActivities() async {
+    if (_isLoading) {
+      setState(() {
+        _isLoading = false;
       });
 
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          setState(() {
-            _studentId = data['studentId'];
-            _isAdmin = data['isAdmin'];
-            _phoneNumber = data['phoneNumber'];
-            _email = data['email'];
-            _userId = data['userId'];
-          });
+      try {
+        var url = Uri.http("10.10.11.168", '/flutter/getUserActivities.php');
+        var response = await http.post(url, body: {
+          "userID": widget.userID,
+        });
+
+        if (response.statusCode == 200) {
+          var data = json.decode(response.body);
+          if (data['status'] == 'success') {
+            setState(() {
+              _activities = (data['activities'] as List<dynamic>?)?.map((activity) {
+                DateTime eventDateTime = DateTime.tryParse(activity['datetime'] ?? '') ?? DateTime.now();
+                return {
+                  ...activity,
+                  'eventDateTime': eventDateTime.toIso8601String(),
+                };
+              }).toList() ?? [];
+            });
+          } else {
+            Fluttertoast.showToast(
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              msg: data['message'] ?? 'Unknown error occurred',
+              toastLength: Toast.LENGTH_SHORT,
+            );
+          }
         } else {
-          Fluttertoast.showToast(
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            msg: data['message'],
-            toastLength: Toast.LENGTH_SHORT,
-          );
+          throw Exception('Failed to load user activities');
         }
-      } else {
-        throw Exception('Failed to load account');
+      } catch (e) {
+        print('Error: $e');
+        Fluttertoast.showToast(
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          msg: 'An error occurred. Please try again.',
+          toastLength: Toast.LENGTH_SHORT,
+        );
       }
-    } catch (e) {
-      print('Error: $e');
-      Fluttertoast.showToast(
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        msg: 'An error occurred. Please try again.',
-        toastLength: Toast.LENGTH_SHORT,
-      );
     }
   }
 
@@ -111,9 +111,9 @@ class _NotiScreen extends State<NotiScreen> {
         break;
       case 3:
         Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StudentInfoCard(userID: userID),
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileScreen(userID: userID),
           ),
         );
         break;
@@ -124,7 +124,7 @@ class _NotiScreen extends State<NotiScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false, // Hide back button
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.red,
         title: Row(
           children: [
@@ -135,7 +135,7 @@ class _NotiScreen extends State<NotiScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                _studentId ?? 'Loading...',
+                'Notifications',
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -143,16 +143,24 @@ class _NotiScreen extends State<NotiScreen> {
         ),
       ),
       body: Container(
-        color: Colors.grey[200], // Light grey background color
-        child: ListView(
-          children: const [
-            EventCard(
-              title: 'เข้าร่วมเชียร์',
-              remaining: 'เหลือระยะเวลาอีก 1 วัน 20 ชั่วโมง 20 นาที ก่อนเริ่มกิจกรรม',
-            ),
+        color: Colors.grey[200],
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : _activities.isEmpty
+                ? Center(child: Text('No activities found'))
+                : ListView.builder(
+                    itemCount: _activities.length,
+                    itemBuilder: (context, index) {
+                      final activity = _activities[index];
+                      final DateTime eventDateTime = DateTime.parse(activity['eventDateTime'] ?? DateTime.now().toString());
+                      final String title = activity['title'] ?? 'No title';
 
-          ],
-        ),
+                      return EventCard(
+                        title: title,
+                        eventDateTime: eventDateTime,
+                      );
+                    },
+                  ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -172,19 +180,35 @@ class _NotiScreen extends State<NotiScreen> {
     );
   }
 }
-
 class EventCard extends StatelessWidget {
   final String title;
-  final String remaining;
+  final DateTime eventDateTime;
 
   const EventCard({
     super.key,
     required this.title,
-    required this.remaining,
+    required this.eventDateTime,
   });
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final difference = eventDateTime.difference(now);
+
+    String message;
+    Color color;
+
+    if (difference.isNegative) {
+      message = 'กิจกรรมจบแล้ว'; // Activity has ended
+      color = Colors.red;
+    } else if (difference.inDays == 0 && difference.inHours < 24) {
+      message = 'กิจกรรมกำลังเริ่มขึ้น'; // Activity is starting soon
+      color = Colors.yellow;
+    } else {
+      message = 'กิจกรรมจะเริ่มในอีก ${difference.inDays} วัน'; // Activity starts in X days
+      color = Colors.green;
+    }
+
     return Card(
       margin: const EdgeInsets.all(8),
       color: Colors.white,
@@ -204,7 +228,10 @@ class EventCard extends StatelessWidget {
                       color: Colors.red),
                 ),
                 const SizedBox(height: 4),
-                Text(remaining, style: const TextStyle(fontSize: 14)),
+                Text(
+                  message,
+                  style: TextStyle(fontSize: 14, color: color),
+                ),
                 const SizedBox(height: 8),
               ],
             ),

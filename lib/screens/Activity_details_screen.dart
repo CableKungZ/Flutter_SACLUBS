@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'add_activity_screen.dart'; // Import your AddActivityScreen
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import '/provider/activity_provider.dart'; // Import your provider
 import 'dart:convert';
+import 'package:http/http.dart' as http; // Import http package for making requests
 
 class ActivityDetailsArguments {
+  final String userId;
   final String activityId;
   final String title;
   final String imagePath;
@@ -16,6 +18,7 @@ class ActivityDetailsArguments {
   final String location;
 
   ActivityDetailsArguments({
+    required this.userId,
     required this.activityId,
     required this.title,
     required this.imagePath,
@@ -52,100 +55,33 @@ class ActivityDetailsScreen extends StatelessWidget {
       ) as Map<String, dynamic>?;
 
       if (result != null) {
-        try {
-          var url = Uri.http("10.10.11.168", '/flutter/addActivity.php');
-
-          var response = await http.post(
-            url,
-            headers: {"Content-Type": "application/x-www-form-urlencoded"},
-            body: {
-              "id": result['activityId']?.toString() ?? '',  
-              "title": result['title'] ?? 'Null',
-              "imagePath": result['imagePath'] ?? 'Null',
-              "description": result['description'] ?? 'Null',
-              "scoreType": result['category'] ?? 'Null',
-              "score": result['score']?.toString() ?? '0',
-              "location": result['location']?.toString() ?? '0',
-              "datetime": result['datetime']?.toString() ?? '0',
-              "isJoinable" : result['isJoinable']?.toString() ?? '0',
-            }
-          );
-
-          if (response.statusCode == 200) {
-            var data = json.decode(response.body);
-            if (data['status'] == 'success') {
-              Fluttertoast.showToast(
-                backgroundColor: Colors.green,
-                textColor: Colors.white,
-                msg: 'Activity updated successfully',
-                toastLength: Toast.LENGTH_SHORT,
-              );
-            } else {
-              Fluttertoast.showToast(
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                msg: data['message'],
-                toastLength: Toast.LENGTH_SHORT,
-              );
-            }
-          } else {
-            throw Exception('Failed to update activity');
-          }
-        } catch (e) {
-          print('Error: $e');
-          Fluttertoast.showToast(
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            msg: 'An error occurred. Please try again.',
-            toastLength: Toast.LENGTH_SHORT,
-          );
-        }
+        await Provider.of<ActivityProvider>(context, listen: false).updateActivity(result);
       }
       Navigator.pop(context);
     }
 
-    Future<void> _deleteActivity() async {
-      try {
-        var url = Uri.http("10.10.11.168", '/flutter/delActivity.php');
+    Future<void> _addUserActivity() async {
+      var url = Uri.http("10.10.11.168", '/flutter/userJoinActivity.php');
+      var response = await http.post(url, body: {
+        'userId': args.userId,
+        'activityId': args.activityId,
+      });
 
-        var response = await http.post(
-          url,
-          headers: {"Content-Type": "application/x-www-form-urlencoded"},
-          body: {
-            "id": args.activityId,
-          }
+      var responseData = json.decode(response.body);
+      if (responseData['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Joined activity successfully')),
         );
-
-        if (response.statusCode == 200) {
-          var data = json.decode(response.body);
-          if (data['status'] == 'success') {
-            Fluttertoast.showToast(
-              backgroundColor: Colors.green,
-              textColor: Colors.white,
-              msg: 'Activity deleted successfully',
-              toastLength: Toast.LENGTH_SHORT,
-            );
-            Navigator.pop(context); // Go back after deletion
-          } else {
-            Fluttertoast.showToast(
-              backgroundColor: Colors.red,
-              textColor: Colors.white,
-              msg: data['message'],
-              toastLength: Toast.LENGTH_SHORT,
-            );
-          }
-        } else {
-          throw Exception('Failed to delete activity');
-        }
-      } catch (e) {
-        print('Error: $e');
-        Fluttertoast.showToast(
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          msg: 'An error occurred. Please try again.',
-          toastLength: Toast.LENGTH_SHORT,
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error joining activity: ${responseData['message']}')),
         );
       }
+    }
+
+    Future<void> _deleteActivity() async {
+      await Provider.of<ActivityProvider>(context, listen: false).deleteActivity(args.activityId);
+      Navigator.pop(context); // Go back after deletion
     }
 
     return Scaffold(
@@ -209,11 +145,7 @@ class ActivityDetailsScreen extends StatelessWidget {
           if (args.isJoinable)
             Center(
               child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Join/Register functionality not implemented')),
-                  );
-                },
+                onPressed: _addUserActivity,
                 child: const Text('Join/Register'),
               ),
             ),

@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => StudentInfoCard(userID: userID),
+            builder: (context) => ProfileScreen(userID: userID),
           ),
         );
         break;
@@ -212,6 +212,7 @@ Future<void> _addActivity() async {
       context,
       '/activityDetail',
       arguments: ActivityDetailsArguments(
+        userId: widget.userID,
         activityId: _activities[index]['id']!,
         title: _activities[index]['title']!,
         imagePath: _activities[index]['imagePath']!,

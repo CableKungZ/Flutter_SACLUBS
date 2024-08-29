@@ -176,6 +176,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
               _buildTextField(
                 controller: _descriptionController,
                 labelText: 'Description',
+                maxLines: null, // Allow unlimited lines
                 errorText: _descriptionError,
               ),
               _buildTextField(
@@ -219,6 +220,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     required String labelText,
     TextInputType keyboardType = TextInputType.text,
     String? errorText,
+    int? maxLines, // Add maxLines parameter
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -228,6 +230,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
+            maxLines: maxLines, // Set maxLines
             decoration: InputDecoration(
               labelText: labelText,
               border: OutlineInputBorder(),

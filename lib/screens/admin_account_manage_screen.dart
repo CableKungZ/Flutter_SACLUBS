@@ -13,9 +13,11 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Map<String, String> accountData = {};
   bool isEditing = false;
+  final String _baseUrl = "10.10.11.168";
 
   Future<void> loadAccount() async {
-    var url = Uri.parse("http://10.10.11.168/flutter/getAccountManager.php");
+    var url = Uri.http(_baseUrl, '/flutter/getAccountManager.php');
+
     var response = await http.post(url, body: {
       "id": _idController.text,
     });
@@ -45,7 +47,7 @@ class _AdminAccountManageScreenState extends State<AdminAccountManageScreen> {
 
   void saveAccount() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final url = Uri.parse("http://10.10.11.168/flutter/editAccountManager.php");
+      final url = Uri.http(_baseUrl, '/flutter/editAccountManager.php');
 
       final response = await http.post(url, body: {
         "userID": accountData['ID'],
