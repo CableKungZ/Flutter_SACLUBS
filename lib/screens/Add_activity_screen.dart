@@ -176,7 +176,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
               _buildTextField(
                 controller: _descriptionController,
                 labelText: 'Description',
-                maxLines: null, // Allow unlimited lines
+                maxLines: null,
                 errorText: _descriptionError,
               ),
               _buildTextField(

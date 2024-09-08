@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'add_activity_screen.dart'; // Import your AddActivityScreen
-import '/provider/activity_provider.dart'; // Import your provider
+import '/provider/databaseProvider.dart'; // Import your provider
 import 'dart:convert';
 import 'package:http/http.dart' as http; // Import http package for making requests
 
@@ -36,53 +36,7 @@ class ActivityDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ActivityDetailsArguments args = ModalRoute.of(context)!.settings.arguments as ActivityDetailsArguments;
 
-    Future<void> _editActivity() async {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddActivityScreen(
-            activityId: args.activityId,
-            title: args.title,
-            imagePath: args.imagePath,
-            description: args.description,
-            isJoinable: args.isJoinable,
-            category: args.category,
-            score: args.score,
-            datetime: args.datetime,
-            location: args.location,
-          ),
-        ),
-      ) as Map<String, dynamic>?;
-
-      if (result != null) {
-        await Provider.of<ActivityProvider>(context, listen: false).updateActivity(result);
-      }
-      Navigator.pop(context);
-    }
-
-    Future<void> _addUserActivity() async {
-      var url = Uri.http("10.10.11.168", '/flutter/userJoinActivity.php');
-      var response = await http.post(url, body: {
-        'userId': args.userId,
-        'activityId': args.activityId,
-      });
-
-      var responseData = json.decode(response.body);
-      if (responseData['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Joined activity successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error joining activity: ${responseData['message']}')),
-        );
-      }
-    }
-
-    Future<void> _deleteActivity() async {
-      await Provider.of<ActivityProvider>(context, listen: false).deleteActivity(args.activityId);
-      Navigator.pop(context); // Go back after deletion
-    }
+    final bool joined = 
 
     return Scaffold(
       appBar: AppBar(
@@ -145,8 +99,10 @@ class ActivityDetailsScreen extends StatelessWidget {
           if (args.isJoinable)
             Center(
               child: ElevatedButton(
-                onPressed: _addUserActivity,
-                child: const Text('Join/Register'),
+                onPressed: {
+                  await Provider.of<ActivityProvider>().addUserActivity(args.userId,args.activityId);
+                },
+                child: const Text(if joined ? 'Cancle' : 'Join/Register'),
               ),
             ),
         ],
