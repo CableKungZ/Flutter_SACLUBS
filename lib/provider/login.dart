@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen2 extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _LoginScreen2State createState() => _LoginScreen2State();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreen2State extends State<LoginScreen2> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final ApiService apiService = ApiService();

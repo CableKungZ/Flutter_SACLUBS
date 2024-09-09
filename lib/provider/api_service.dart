@@ -3,11 +3,11 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   final String baseUrl =
-      "http://yourserver.com"; // Replace with your actual server URL
+      "http://10.53.1.65/flutter"; // Replace with your actual server URL
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/login.php'),
+      Uri.parse('$baseUrl/login2.php'),
       body: {
         'email': email,
         'password': password,
@@ -24,7 +24,7 @@ class ApiService {
   Future<Map<String, dynamic>> register(String email, String password,
       String phoneNumber, String studentId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/register.php'),
+      Uri.parse('$baseUrl/register2.php'),
       body: {
         'email': email,
         'password': password,

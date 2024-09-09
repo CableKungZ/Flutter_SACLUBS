@@ -36,7 +36,6 @@ class ActivityDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ActivityDetailsArguments args = ModalRoute.of(context)!.settings.arguments as ActivityDetailsArguments;
 
-    final bool joined = 
 
     return Scaffold(
       appBar: AppBar(
@@ -44,7 +43,7 @@ class ActivityDetailsScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.edit),
-            onPressed: _editActivity,
+            onPressed: {}//_editActivity,
           ),
         ],
       ),
@@ -99,16 +98,14 @@ class ActivityDetailsScreen extends StatelessWidget {
           if (args.isJoinable)
             Center(
               child: ElevatedButton(
-                onPressed: {
-                  await Provider.of<ActivityProvider>().addUserActivity(args.userId,args.activityId);
-                },
-                child: const Text(if joined ? 'Cancle' : 'Join/Register'),
+                onPressed: {},
+                child: const Text('Join/Register'),
               ),
             ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _deleteActivity,
+        onPressed: {} //_deleteActivity,
         child: const Icon(Icons.delete),
         backgroundColor: Colors.blue,
       ),

@@ -5,8 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ActivityProvider with ChangeNotifier {
-  await dotenv.load(fileName: ".env");
-  final String _baseUrl = dotenv.env['baseURL'] ;
+  String _baseUrl = "www.local.com";
 
   Future<void> updateActivity(Map<String, dynamic> result) async {
     try {
@@ -69,7 +68,7 @@ class ActivityProvider with ChangeNotifier {
             msg: 'Activity deleted successfully',
             toastLength: Toast.LENGTH_SHORT,
           );
-          notifyListeners(); 
+          notifyListeners();
         } else {
           _showErrorToast(data['message']);
         }
@@ -83,45 +82,47 @@ class ActivityProvider with ChangeNotifier {
   }
 
   Future<void> addUserActivity(String userId, String activityId) async {
-      var url = Uri.http(_baseUrl, '/flutter/userJoinActivity.php');
-      var response = await http.post(url, body: {
-        'userId': userId,
-        'activityId': activityId,
-      });
+    var url = Uri.http(_baseUrl, '/flutter/userJoinActivity.php');
+    var response = await http.post(url, body: {
+      'userId': userId,
+      'activityId': activityId,
+    });
 
-      var responseData = json.decode(response.body);
-      if (responseData['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Joined activity successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error joining activity: ${responseData['message']}')),
-        );
-      }
+    var responseData = json.decode(response.body);
+    if (responseData['status'] == 'success') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Joined activity successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('Error joining activity: ${responseData['message']}')),
+      );
     }
-  
+  }
+
   Future<void> loadAccount(String id) async {
-      var url = Uri.http(_baseUrl, '/flutter/getAccountManager.php');
-      var response = await http.post(url, body: {
-        "id": id,
-      });
+    var url = Uri.http(_baseUrl, '/flutter/getAccountManager.php');
+    var response = await http.post(url, body: {
+      "id": id,
+    });
 
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        accountData = {
-          "ID": data['userID'],
-          "EMAIL": data['email'],
-          "ROLE": data['isAdmin'] == "1" ? "ADMIN" : "STUDENT",
-          "StudentID": data['studentId'],
-          "PhoneNumber": data['phoneNumber'],
-          "password": '', // Ensure the password field is included
-        };
-        notifyListeners();
-      } else {
-        throw Exception("Failed to load account data");
-      }
+    if (response.statusCode == 200) {
+      var data = json.decode(response.body);
+      accountData = {
+        "ID": data['userID'],
+        "EMAIL": data['email'],
+        "ROLE": data['isAdmin'] == "1" ? "ADMIN" : "STUDENT",
+        "StudentID": data['studentId'],
+        "PhoneNumber": data['phoneNumber'],
+        "password": '', // Ensure the password field is included
+      };
+      notifyListeners();
+    } else {
+      throw Exception("Failed to load account data");
     }
+  }
 
   Future<void> saveAccount() async {
     var url = Uri.parse("http://10.10.11.168/flutter/editAccountManager.php");
@@ -148,6 +149,7 @@ class ActivityProvider with ChangeNotifier {
       throw Exception('Failed to connect to server');
     }
   }
+
   Future<void> deleteActivity(String activityId) async {
     try {
       var url = Uri.http(_baseUrl, '/flutter/delActivity.php');
@@ -179,33 +181,37 @@ class ActivityProvider with ChangeNotifier {
       _showErrorToast('An error occurred. Please try again.');
     }
   }
+
   Future<void> addUserActivity(String userId, String activityId) async {
-      var url = Uri.http("10.10.11.168", '/flutter/userJoinActivity.php');
-      var response = await http.post(url, body: {
-        'userId': userId,
-        'activityId': activityId,
-      });
+    var url = Uri.http("10.10.11.168", '/flutter/userJoinActivity.php');
+    var response = await http.post(url, body: {
+      'userId': userId,
+      'activityId': activityId,
+    });
 
-      var responseData = json.decode(response.body);
-      if (responseData['status'] == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Joined activity successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error joining activity: ${responseData['message']}')),
-        );
-      }
-    }
-
-  void _showErrorToast(String message) {
-      Fluttertoast.showToast(
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        msg: message,
-        toastLength: Toast.LENGTH_SHORT,
+    var responseData = json.decode(response.body);
+    if (responseData['status'] == 'success') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Joined activity successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('Error joining activity: ${responseData['message']}')),
       );
     }
+  }
+
+  void _showErrorToast(String message) {
+    Fluttertoast.showToast(
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+    );
+  }
+
   Future<void> getAccount() async {
     try {
       var url = Uri.http(_baseUrl, '/flutter/getAccount.php');
@@ -244,15 +250,4 @@ class ActivityProvider with ChangeNotifier {
       );
     }
   }
-
-
-
-
-
-
-
-
-
-
-
 }
